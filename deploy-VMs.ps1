@@ -30,7 +30,7 @@
                          PowerCLI 5.8
     Last Edit          : BL - 13-6-2017
     Version            : 1.1.0
-    Copyright 2016 - CAM IT Solutions
+
 
 #>
 [CmdletBinding()]
