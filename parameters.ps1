@@ -16,9 +16,9 @@
 
     #-- Deployment
         ShutDownAfterCust=$true #-- Shutdown deployed VMs after finishing OS customization ??
-        SelectFirstHost=$true  #-- Deploy VMs on first host in Cluster
-        Gateway= "10.0.10.250"
-        dns = "10.0.10.161","10.0.10.162"
+        SelectFirstHost=$false  #-- Deploy VMs on first host in Cluster
+        Gateway= "10.40.13.250"
+        dns = "10.40.13.6","10.40.13.7"
         SubNetMask = "255.255.255.0"
         TO_OSCustomization= 25 #-- [min] max doorlooptijd voor het wachten op OS Customization
         TO_waitAfterCust=3 #-- [min] wachtijd na Customization OS is uitgevoerd
@@ -26,11 +26,11 @@
        
 
     #-- vSphere vCenter FQDN
-        vCenter="000-srv-vmvc-01.paas.camcube.nl" #-- vCenter FQDN
-        Cluster="C03-OTA" #-- Host cluster to deploy VMs into
+        vCenter="10.30.30.31" #-- vCenter FQDN
+        Cluster="CLUS01" #-- Host cluster to deploy VMs into
 
     #-- CSV
-        CSVfile="serverlistA.csv"
+        CSVfile="serverlist.csv"
         CSVDelimiter=","
         refHeader=(
             "Hard disk 1",
