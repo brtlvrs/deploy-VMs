@@ -869,7 +869,7 @@ Add-Type -TypeDefinition @"
                 Write-Verbose $message           
                 if ($Log2SysLog) {Send-syslog -Message $message -Severity Debug}
                 }
-	    else {Write-output $message                
+	    else {Write-host $message                
                 if ($Log2SysLog) {Send-syslog -Message $message -Severity Informational}
                 }
     } 
