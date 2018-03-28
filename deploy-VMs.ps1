@@ -41,7 +41,7 @@ Param(
 Begin{
     #-- initialize environment
     $DebugPreference="SilentlyContinue"
-    $VerbosePreference="Continue"
+    $VerbosePreference="SilentlyContinue"
     $ErrorActionPreference="Continue"
     $WarningPreference="Continue"
     clear-host #-- clear CLi
@@ -52,7 +52,7 @@ Begin{
 	$scriptpath=get-item (Split-Path -parent $MyInvocation.MyCommand.Definition)
 	$scriptname=(Split-Path -Leaf $MyInvocation.mycommand.path).Split(".")[0]
 
-    #-- load default CAMCube functions
+    #-- load default functions
     Import-Module $scriptpath\cc-functions\cc-functions.psm1 -Force -global
 
     #-- Load Parameterfile
@@ -61,15 +61,15 @@ Begin{
 
     #-- create log file and cleanup old log files
     $log=New-LogObject -name $scriptname -TimeStampLog -location $P.LogPath -keepNdays $P.LogDays
-    $log.verbose("Script started at {0:HH}:{0:mm}:{0:ss}" -f $ts_start)
+   $log.msg("Script started at {0:HH}:{0:mm}:{0:ss}" -f $ts_start)
     if ($P.openlog -and (Test-Path $p.NotePad)) {
         start-process $p.NotePad -argumentlist $log.file
     }
     
     #-- logging parameter settings
-    $log.verbose( "--- Loaded Parameters ---")
+   $log.msg( "--- Loaded Parameters ---")
     $P.GetEnumerator() | sort name | %{$log.verbose($_.name + " : " + $_.value)}
-    $log.verbose("-----")
+   $log.msg("-----")
 
 
 
@@ -113,7 +113,7 @@ Begin{
         $log.warning($CSVFile+" niet vinden gevonden.")
         $csvfile = get-childitem -Path $scriptpath -Filter *.csv |Out-GridView -Title "Selecteer het CSV bestand met VMs om uit te rollen." -OutputMode Single
         if (!(Test-Path $CSVFile)) {
-            $log.verbose("Geen geldige input voor CSV bestand.")
+           $log.msg("Geen geldige input voor CSV bestand.")
             exit-script
         }
     }
@@ -368,7 +368,7 @@ Begin{
                         "Delayed" {
                             #-- set status to Wait
 					        set-QueueStatus -item $QueueItem -State "Wait" #-- mark it as being started
-					        $log.verbose("Task ("+$QueueItem.Queue+") status voor "+ $QueueItem.queue + " wordt opnieuw op wait gezet.")
+					       $log.msg("Task ("+$QueueItem.Queue+") status voor "+ $QueueItem.queue + " wordt opnieuw op wait gezet.")
                             }
                         "Skipped" {
                             #-- Move item to Done phase
@@ -393,7 +393,7 @@ Begin{
 				    } #-- end of process item	
 			    } #-- end of task run
         } else {
-            $log.verbose("task has invalid properties, cannot proces")
+           $log.msg("task has invalid properties, cannot proces")
         }
     } #-- end of function
     
@@ -422,7 +422,8 @@ Begin{
     $taskParameters=@{}
     $CSVTable=import-tasktable -CSVFile $P.CSVfile -refHeader $p.refHeader -csvDelimiter $p.CSVDelimiter
     # build task parameter hash table
-    $CSVTable | %{$taskParameters.add($_.servername,$_)}
+    foreach ($line in $CSVTable | Out-GridView -Title "Which VMs are we deploying" -PassThru) {$taskParameters.add($line.servername,$line)}
+  #  $CSVTable | %{$taskParameters.add($_.servername,$_)}
     Remove-Variable -Name TaskTable -Force -ErrorAction SilentlyContinue
     # build Array for for task status
     [array]$TaskTable=$taskParameters.GetEnumerator() | select -ExpandProperty value | select servername
@@ -432,8 +433,11 @@ Begin{
 }
 
 Process{
-#-- note: area to write script code.....
+    $preference=@{}
+    $DebugPreference="SilentlyContinue"
+    $VerbosePreference="SilentlyContinue"
     import-PowerCLI
+    $VerbosePreference="SilentlyContinue"
     $log.msg("PowerCLI loaded")
 
     # connect to vCenter, assuming to use credentials from user that is running powershell
@@ -488,15 +492,15 @@ Process{
     $Loopcounter=0
     $exitloop=$false
     Update-toHTMLStatus -varName tasktable
-    $log.verbose("HTML report created in "+ $HTMLArch.tasktable.outputfile)
+   $log.msg("HTML report created in "+ $HTMLArch.tasktable.outputfile)
     Start-Process -WindowStyle Normal -FilePath $HTMLArch.tasktable.OutPutFile
     Do {
     	$Loopcounter ++
-        Write-Verbose "----- LOOP : $Loopcounter "
+        Write-host "----- LOOP : $Loopcounter " #-- only for console output
         #-- TASK: INIT
 	    $tmpWaitCode = {
             #-- let the invoke-task function know that code has run succesfully
-            $log.verbose($queueitem.servername + ": Task - Initiate job")
+           $log.msg($queueitem.servername + ": Task - Initiate job")
 		    Set-Variable -Name CodeResult -Scope script -Value $True #-- Wait scriptblock finished succesfully
             }
         $tmpBusyCode ={
@@ -505,16 +509,32 @@ Process{
         }
         invoke-task -ListName "tasktable" -Taskname "Init" -NextTask "CloneVM" -BusyCode $tmpBusyCode -WaitCode $tmpWaitCode
 
+
         #-- TASK: Clone VM 	
 	    $tmpWaitCode = { 
-            $log.verbose($queueitem.servername + ": Task - CloneVM")
+           $log.msg($queueitem.servername + ": Task - CloneVM")
             #-- configure OS Customization Specification
             $vm=$taskparameters.$($queueitem.servername)
-            $log.verbose($queueitem.servername + ": configurre OS Customization Spec")
+            #-- check if network of template is valid
+           $log.msg($queueitem.servername + ": validate network config template")
+            $template=get-template $vm.template
+            if ($vm.portgroup -inotlike ($template | get-networkadapter | select -ExpandProperty networkname)) {
+                #-- portgroup of template needs to be changed
+               $log.msg($queueitem.servername + ": changing template portgroup")
+                Set-Template -Template $template -ToVM #-- convert template to VM
+                $tmplVM=get-vm -Name $vm.template 
+                $tmplVM| Get-NetworkAdapter | Set-NetworkAdapter -NetworkName $vm.portgroup -Confirm:$false #-- change networkadapter
+                $tmplVM | Set-VM -ToTemplate -Confirm:$false #-- convert back to template
+            } else {
+               $log.msg($queueitem.servername + ": template portgroup is ok")
+            }
+
+            #-- edit customization Spec
+           $log.msg($queueitem.servername + ": configure OS Customization Spec")
             $specs = Get-OSCustomizationSpec $vm.OSCustomizationSpec
             $specs | Get-OSCustomizationNicMapping | Set-OSCustomizationNicMapping -IpMode UseStaticIp -IpAddress $vm.ip -SubnetMask $p.subnetmask -DefaultGateway $p.gateway -DNS $p.dns | Out-Null
             #-- deploy new VM from Template and store TASK id
-            $log.verbose($queueitem.servername + ": deploy VM")
+           $log.msg($queueitem.servername + ": deploy VM")
             $tasktable_tempdata.$($vm.servername)=(  new-vm -vmhost $vmhost -name $vm.servername -template $vm.template -datastore $vm.datastore -OSCustomizationSpec $specs -RunAsync).id
             
             #-- let the invoke-task function know that code has run succesfully
@@ -548,7 +568,7 @@ Process{
 
         #-- TASK: Modify VM hardware 	
 	    $tmpWaitCode = {
-            $log.verbose($queueitem.servername + ": Task - config HW")
+           $log.msg($queueitem.servername + ": Task - config HW")
             $HWParams=$taskparameters.($queueitem.servername)
             #-- configure disks
             $disks=($hwparams | gm -name "Hard disk*")
@@ -561,10 +581,10 @@ Process{
 
                     if ($harddisk) {
                         #-- configure harddisk size of existing harddisk
-                        $log.verbose($queueitem.servername + ": " + $harddisk.name + " gevonden.") 
+                       $log.msg($queueitem.servername + ": " + $harddisk.name + " gevonden.") 
                         if ($harddisk.CapacityKB -lt $diskinKB ) {
                             #-- desired disk size is greater then actual disk size
-                            $log.verbose($queueitem.servername + ": " +$disk + " is vergroot naar " + $hwparams.($disk) + "[GB]")
+                           $log.msg($queueitem.servername + ": " +$disk + " is vergroot naar " + $hwparams.($disk) + "[GB]")
                             Set-HardDisk -HardDisk $harddisk  -CapacityKB $diskinKB -Confirm:$false
                         } else {
                             #-- desired disk size is less then actual disk size, can't adjust size
@@ -572,7 +592,7 @@ Process{
                         }
                     } elseif ($diskinKB -gt 0) {
                         #-- disk doesn't exist, so let's create it, thinprovisioned.
-                        $log.verbose($queueitem.servername + ": " + $harddisk.name + " niet gevonden.")
+                       $log.msg($queueitem.servername + ": " + $harddisk.name + " niet gevonden.")
                         New-HardDisk -CapacityKB $diskinKB -VM $queueitem.servername -StorageFormat Thin
                     }
                 }
@@ -580,7 +600,7 @@ Process{
                 $log.msg($queueitem.servername + ": " +"Geen disken gevonden.")
             }
             #-- aanpassen van de andere HW
-            $log.verbose($queueitem.servername + ": aanpassen HW")
+           $log.msg($queueitem.servername + ": aanpassen HW")
             Set-VM -vm $HWParams.servername -NumCpu $HWParams.vcpu -MemoryGB $HWParams.memory  -Confirm:$false -Notes $HWParams.notes
 
             #-- let the invoke-task function now that code has run succesfully
@@ -624,8 +644,8 @@ Process{
 
         #-- TASK: CustomizeOS	
 	    $tmpWaitCode = {
-            $log.verbose($queueitem.servername + ": Task - CustomizeOS")
-            $log.verbose($queueitem.servername + ": Start VM")
+           $log.msg($queueitem.servername + ": Task - CustomizeOS")
+           $log.msg($queueitem.servername + ": Start VM")
             #-- start VM
             $id=get-vm -Name $queueitem.servername | Start-VM -RunAsync
             #-- store task ID
@@ -635,37 +655,40 @@ Process{
         $tmpBusyCode = {
             #-- waiting for the event 'Customization of VM ******** succeeded'
             #-- note time of when VM start event was triggered
-            $TimeStarted=get-vievent -Entity $queueitem.servername | ?{$_.fullformattedmessage -ilike "Task: Power On virtual machine"} | sort createdtime | select -ExpandProperty CreatedTime -last 1
+            $TimeStarted=get-vievent -Entity $queueitem.servername -Types Info -Start $ts_start | ?{$_.fullformattedmessage -ilike "Task: Power On virtual machine"} | sort createdtime | select -ExpandProperty CreatedTime -last 1
             if (((get-date) - $TimeStarted).Minutes -gt $p.TO_OSCustomization) {
                 #-- Customization off OS did not finish in time.
                 $log.warning($queueitem.servername + ": "+  $P.TO_OSCustomization +  "[min] gewacht op OS customization.")
                 $answer=$false
             }else{
+                #-- customization is finished, giving OS some grace time before next fase
+                if ($tasktable_tempdata.$($queueitem.servername) -ilike "CustOS_Finished") {
+                    $CustFinished=get-vievent -Entity $queueitem.servername -Types Info -Start  $TimeStarted | ?{$_.fullformattedmessage -imatch "^Customization of.*succeeded."} | select -ExpandProperty createdtime
+                    if  (((get-date)-$CustFinished ).minutes -gt $P.TO_waitAfterCust) {
+                       $log.msg($queueitem.servername + ": waited " + $P.TO_waitAfterCust + "[min] before shutdown of VM. OS Customization is finished.")
+                        $answer=$true
+                        $tasktable_tempdata.($queueitem.servername)=""
+                    }
+                } else {
                 #--Check events for customization events
-                switch -Regex (get-vievent -Entity $queueitem.servername | select -ExpandProperty FullFormattedMessage ) {
-                    "^Customization of.*succeeded." {
-                        #-- customization is finished, task finished
-                        if ($tasktable_tempdata.$($queueitem.servername) -eq "CustOS_Started") {$log.msg($queueitem.servername + ": OS customazation finished.")}
-                        $tasktable_tempdata.$($queueitem.servername)="CustOS_Finished"
-                        $CustFinished=get-vievent -Entity $queueitem.servername | ?{$_.fullformattedmessage -imatch "^Customization of.*succeeded."} | select -ExpandProperty createdtime
-                        if  (((get-date)-$CustFinished ).minutes -gt $P.TO_waitAfterCust) {
-                            $log.verbose($queueitem.servername + ": waited " + $P.TO_waitAfterCust + "[min] before shutdown of VM. OS Customization is finished.")
-                            $answer=$true
-                            $tasktable_tempdata.($queueitem.servername)=""
+                    switch -Regex (get-vievent -Entity $queueitem.servername -Types Info -Start  $TimeStarted | select -ExpandProperty FullFormattedMessage ) {
+                        "^Customization of.*succeeded." {
+                            #-- customization is finished, task finished
+                            if ($tasktable_tempdata.$($queueitem.servername) -eq "CustOS_Started") {$log.msg($queueitem.servername + ": OS customazation finished.")}
+                            $tasktable_tempdata.$($queueitem.servername)="CustOS_Finished"
+                            break
+                            }
+                        "^Started customization of VM.*" {
+                            if ($tasktable_tempdata.($queueitem.servername) -inotlike "CustOS_Started") {
+                                $event=get-vievent -Entity $queueitem.servername  -Types Info -Start  $TimeStarted| ?{$_.FullFormattedMessage -imatch "^Started customization of VM.*"} | select -First 1
+                                $log.msg($queueitem.servername + ": OS customization is gestart om "+ $event.createdTime)
+                                $tasktable_tempdata.($queueitem.servername)="CustOS_Started"
+                                Set-Variable  -name OSCustomFinished -Value $false -Scope script
+                            }
+                            break
                         }
-                        break
-                        }
-                    "^Started customization of VM.*" {
-                        if ($tasktable_tempdata.($queueitem.servername) -inotlike "CustOS_Started") {
-                            $event=get-vievent -Entity $queueitem.servername | ?{$_.FullFormattedMessage -imatch "^Started customization of VM.*"} | select -First 1
-                            $log.msg($queueitem.servername + ": OS customization is gestart om "+ $event.createdTime)
-                            $tasktable_tempdata.($queueitem.servername)="CustOS_Started"
-                            Set-Variable  -name OSCustomFinished -Value $false -Scope script
-                        }
-                        break
                     }
                 }
-
             }
 		    Set-Variable -Name CodeResult -Scope script -Value $answer
         }
@@ -674,7 +697,7 @@ Process{
 
             #-- TASK: Shutdown VM 	
 	        $tmpWaitCode = {
-                $log.verbose($queueitem.servername + ": Task - Shutdown VM")
+               $log.msg($queueitem.servername + ": Task - Shutdown VM")
                 $vm = get-vm $queueitem.servername
                 if ($vm.extensiondata.guest.toolsstatus -imatch "toolsNotInstalled|toolsNotRunning") {
                     #-- VMware tools not active ==> powering off VM
