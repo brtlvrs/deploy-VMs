@@ -1,6 +1,8 @@
-Servername,ip,Notes,deploy,OS,vcpu,Memory,nic,hard disk 1,hard disk 2,OSCustomizationSpec,datastore,template
-c03-dev-test-01,172.20.0.160,auto deployment test script result,FALSE,Windows Server 2012 R2 Standard,2,4,1,32,20,000-Infra-No domain,c03_nfs_c12_01,C03-W2K12R2-STD
-c03-dev-test-02,172.20.0.161,auto deployment test script result,FALSE,Windows Server 2012 R2 Standard,2,4,1,32,15,000-Infra-No domain,c03_nfs_c12_01,C03-W2K12R2-STD
-c03-dev-test-03,172.20.0.162,auto deployment test script result,FALSE,Windows Server 2012 R2 Standard,1,2,1,32,20,000-Infra-No domain,c03_nfs_c12_01,C03-W2K12R2-STD
-c03-dev-test-04,172.20.0.163,auto deployment test script result,FALSE,Windows Server 2012 R2 Standard,2,2,1,32,10,000-Infra-No domain,c03_nfs_c12_01,C03-W2K12R2-STD
-c03-dev-test-05,172.20.0.164,auto deployment test script result,FALSE,Windows Server 2012 R2 Standard,1,2,1,32,5,000-Infra-No domain,c03_nfs_c12_01,C03-W2K12R2-STD
+servername,Notes,vCPU,Memory,nic,Hard disk 1,Hard disk 2,Hard disk 3,OSCustomiationSpec,datastore,template,ip,portgroup
+VM-004,Stepping stone,2,4,1,35,15,5,ScriptedDeploy-W2K12R2-noDomain-vlan4013,dcutr-stor010-ds03,templ_w2k12r2dc,10.40.13.3,SDDC-Management
+VM-005,MS PKI - Offline root CA,2,4,1,35,5,5,ScriptedDeploy-W2K12R2-noDomain-vlan4013,dcutr-stor010-ds03,templ_w2k12r2dc,10.40.13.4,SDDC-Management
+VM-006,MS PKI - subroot CA,2,4,1,35,5,5,ScriptedDeploy-W2K12R2-infra.loc-vlan4013,dcutr-stor010-ds03,templ_w2k12r2dc,10.40.13.5,SDDC-Management
+VM-007,MS Active Directory en DNS server - node 1,2,4,1,35,5,5,ScriptedDeploy-W2K12R2-noDomain-vlan4013,dcutr-stor010-ds03,templ_w2k12r2dc,10.40.13.6,SDDC-Management
+VM-008,MS Active Directory en DNS server - node 2,2,4,1,35,5,5,ScriptedDeploy-W2K12R2-noDomain-vlan4013,dcutr-stor010-ds03,templ_w2k12r2dc,10.40.13.7,SDDC-Management
+VM-009,MS services DHCP - node 1,2,4,1,35,5,5,ScriptedDeploy-W2K12R2-infra.loc-vlan4013,dcutr-stor010-ds03,templ_w2k12r2dc,10.40.13.8,SDDC-Management
+VM-010,MS services DHCP - node 2,2,4,1,35,5,5,ScriptedDeploy-W2K12R2-infra.loc-vlan4013,dcutr-stor010-ds03,templ_w2k12r2dc,10.40.13.9,SDDC-Management
