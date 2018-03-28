@@ -49,7 +49,7 @@
         )
 
     #-- workflow
-        idletime=15 #-- [s] time each loop will wait before it runs again
+        idletime=10 #-- [s] time each loop will wait before it runs again
         MaxrunningHours= 6 #-- [hours] Max time the workflow loop wil run.
 
     #-- Syslog parameters
