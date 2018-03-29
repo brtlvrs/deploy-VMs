@@ -57,6 +57,19 @@ Begin{
 
     #-- Load Parameterfile
     $P = & $scriptpath\parameters.ps1
+
+    # Gather all functions
+    $Functions  = @(Get-ChildItem -Path ($scriptpath+"\"+$P.FunctionsSubFolder) -Filter *.ps1 -ErrorAction SilentlyContinue)
+
+    # Dot source the functions
+    ForEach ($File in @($Functions)) {
+        Try {
+            . $File.FullName
+        } Catch {
+            Write-Error -Message "Failed to import function $($File.FullName): $_"
+        }       
+    }
+
     if ($P.Log2SysLog) {init-SysLogclient}
 
     #-- create log file and cleanup old log files

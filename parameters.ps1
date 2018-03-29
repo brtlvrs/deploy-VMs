@@ -13,6 +13,7 @@
         LogDays=1 #-- Logs older dan x days will be removed
         OpenLog=$true #-- openlog file in notepad on creation ?
         NotePad="D:\Beheer\Software\Notepad++\notepad++.exe" #-- full path to Notepad++
+        FunctionsSubFolder="functions"
 
     #-- Deployment
         ShutDownAfterCust=$true #-- Shutdown deployed VMs after finishing OS customization ??
