@@ -56,7 +56,7 @@ Begin{
     $P = & $scriptpath\parameters.ps1
 
     # Gather all functions
-    $Functions  = @(Get-ChildItem -Path ($scriptpath+"\"+$P.FunctionsSubFolder) -Filter *.ps1 -ErrorAction SilentlyContinue)
+    $Functions  = @(Get-ChildItem -Path ($scriptpath.FullName+"\"+$P.FunctionsSubFolder) -Filter *.ps1 -ErrorAction SilentlyContinue)
 
     # Dot source the functions
     ForEach ($File in @($Functions)) {
