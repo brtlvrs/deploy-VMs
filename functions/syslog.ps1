@@ -51,55 +51,54 @@ function init-SysLogclient {
     .EXAMPLE
         init-syslogclient
     #>
-        param(
-            [parameter(mandatory=$false)]$p=$p
-        )
+    param(
+        [parameter(mandatory=$false)]$p=$p
+    )
 
+    $ParTable=@{}
+    $partable["SysLog_Hostname"]=$P.SysLog_Hostname
+    $partable["Syslog_Server"]=$P.Syslog_Server
+    $partable["Syslog_default_Facility"]=$P.Syslog_default_Facility
+    $partable["Syslog_Default_Severity"]=$P.Syslog_Default_Severity
+    $partable["Syslog_Default_minSeverity"]=$P.Syslog_Default_minSeverity
+    $partable["SysLog_default_UDPPort"]=$P.SysLog_default_UDPPort
+    $partable["Syslog_default_ApplicationName"]=$P.Syslog_default_ApplicationName
+    $partable["Log2Syslog"]=$P.Log2Syslog
 
-        $ParTable=@{}
-        $partable["SysLog_Hostname"]=$P.SysLog_Hostname
-        $partable["Syslog_Server"]=$P.Syslog_Server
-        $partable["Syslog_default_Facility"]=$P.Syslog_default_Facility
-        $partable["Syslog_Default_Severity"]=$P.Syslog_Default_Severity
-        $partable["Syslog_Default_minSeverity"]=$P.Syslog_Default_minSeverity
-        $partable["SysLog_default_UDPPort"]=$P.SysLog_default_UDPPort
-        $partable["Syslog_default_ApplicationName"]=$P.Syslog_default_ApplicationName
-        $partable["Log2Syslog"]=$P.Log2Syslog
-
-        $partable.GetEnumerator() | %{
-            $rcd=$_
-        if (Get-Variable -Name $rcd.name -ErrorAction SilentlyContinue) {Get-Variable -Name $rcd.name | Remove-Variable -Confirm:$false }
-            New-Variable -Name $rcd.name -Scope global -Value $rcd.Value
-        }
+    $partable.GetEnumerator() | %{
+        $rcd=$_
+    if (Get-Variable -Name $rcd.name -ErrorAction SilentlyContinue) {Get-Variable -Name $rcd.name | Remove-Variable -Confirm:$false }
+        New-Variable -Name $rcd.name -Scope global -Value $rcd.Value
     }
+}
 
-    function set-SysLogclient {
+function set-SysLogclient {
     <#
     .SYNOPSIS
         Define some default parameters for the send-syslog function
     .EXAMPLE
         set-SysLogclient -Hostname pietje -Server syslog.shire.lan -ApplicationName linux -DefaultFacility local3 -DefaultSeverity Informational 
     #>
-        param(
-            [parameter(mandatory=$true)][string]$Hostname,
-            [parameter(mandatory=$true)][string]$Server,
-            [string]$ApplicationName="-",
-            [Syslog_Facility]$DefaultFacility="local7",
-            [Syslog_Severity]$DefaultSeverity="Informational",
-            [Syslog_Severity]$minSeverity="Informational",
-            [int]$UDPPort=514
-        )
+    param(
+        [parameter(mandatory=$true)][string]$Hostname,
+        [parameter(mandatory=$true)][string]$Server,
+        [string]$ApplicationName="-",
+        [Syslog_Facility]$DefaultFacility="local7",
+        [Syslog_Severity]$DefaultSeverity="Informational",
+        [Syslog_Severity]$minSeverity="Informational",
+        [int]$UDPPort=514
+    )
 
-        New-Variable -Name SysLog_Hostname -Scope global -Value $Hostname -Force
-        New-Variable -Name Syslog_Server -Scope global -Value $Server -Force
-        New-Variable -Name Syslog_default_Facility -Scope global -Value $DefaultFacility -Force
-        New-Variable -Name Syslog_Default_Severity -Scope global -Value $DefaultSeverity -force
-        New-Variable -Name Syslog_Default_minSeverity -Scope global -Value $minSeverity -force
-        New-Variable -Name SysLog_default_UDPPort -Scope global -Value $UDPPort -Force
-        New-Variable -Name Syslog_default_ApplicationName -Scope global -Value $ApplicationName -Force
-    }
+    New-Variable -Name SysLog_Hostname -Scope global -Value $Hostname -Force
+    New-Variable -Name Syslog_Server -Scope global -Value $Server -Force
+    New-Variable -Name Syslog_default_Facility -Scope global -Value $DefaultFacility -Force
+    New-Variable -Name Syslog_Default_Severity -Scope global -Value $DefaultSeverity -force
+    New-Variable -Name Syslog_Default_minSeverity -Scope global -Value $minSeverity -force
+    New-Variable -Name SysLog_default_UDPPort -Scope global -Value $UDPPort -Force
+    New-Variable -Name Syslog_default_ApplicationName -Scope global -Value $ApplicationName -Force
+}
 
-    function send-syslog{
+function send-syslog{
     <#
     .SYNOPSIS
     Sends a SYSLOG message to a server running the SYSLOG daemon
