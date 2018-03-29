@@ -52,9 +52,6 @@ Begin{
 	$scriptpath=get-item (Split-Path -parent $MyInvocation.MyCommand.Definition)
 	$scriptname=(Split-Path -Leaf $MyInvocation.mycommand.path).Split(".")[0]
 
-    #-- load default functions
-    Import-Module $scriptpath\cc-functions\cc-functions.psm1 -Force -global
-
     #-- Load Parameterfile
     $P = & $scriptpath\parameters.ps1
 
