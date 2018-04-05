@@ -63,15 +63,15 @@ Begin{
 
     #-- create log file and cleanup old log files
     $log=New-LogObject -name $scriptname -TimeStampLog -location $P.LogPath -keepNdays $P.LogDays
-   $log.msg("Script started at {0:HH}:{0:mm}:{0:ss}" -f $ts_start)
+    $log.msg("Script started at {0:HH}:{0:mm}:{0:ss}" -f $ts_start)
     if ($P.openlog -and (Test-Path $p.NotePad)) {
         start-process $p.NotePad -argumentlist $log.file
     }
     
     #-- logging parameter settings
-   $log.msg( "--- Loaded Parameters ---")
+    $log.msg( "--- Loaded Parameters ---")
     $P.GetEnumerator() | sort name | %{$log.verbose($_.name + " : " + $_.value)}
-   $log.msg("-----")
+    $log.msg("-----")
 
 
 
@@ -115,33 +115,51 @@ Begin{
     }
 
     function Test-FileLock {
-	    #-- test if file is locked
-      param (
-		    [parameter(Mandatory=$true, helpmessage="Full path of file to be tested (including file name)")]
-		    [string]$Path
-	    )
+        <#
+        .SYNOPSIS
+            Test if file is locked by other process
+        .DESCRIPTION
+            Boolean function to test if file is locked.
+            Returns true if file is locked, false if it isn't locked.
+        .PARAMETER path
+            Full path of file to test
+        .EXAMPLE
+            >test-filelock -path c:\test.txt
 
-      $oFile = New-Object System.IO.FileInfo $Path
-      if ((Test-Path -Path $Path) -eq $false)
-      { #-- file isn't found, answer of test is false
-  	    $false
-  	    return
-      }
-  
-      try #-- test if file is locked, when locked error will be caught
-      {
-	      $oStream = $oFile.Open([System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None) #-- try accessing the file
-	      if ($oStream)
-	      {
-	        $oStream.Close() #-- close the file, if possible)
-	      }
-	      $false #-- file is not being locked.
-      }
-      catch
-      { #-- there was an exeption triggered while trying to acces the file, so it is being used.
-  	    # file is locked by a process.
-  	    $true
-      }
+            true
+        .EXAMPLE
+            if !(test-filelock -path c:\test.txt) {write-host "File is not locked"} 
+        #>
+
+        [CmdletBinding()]
+
+        param (
+            [parameter(Mandatory=$true, helpmessage="Full path of file to be tested (including file name)")]
+            [string]$Path
+        )
+
+
+        if ((Test-Path -Path $Path) -eq $false)
+        { #-- file isn't found, answer of test is false
+        $false
+        return
+        }
+
+        $oFile = New-Object System.IO.FileInfo $Path
+        try #-- test if file is locked, when locked error will be caught
+        {
+            $oStream = $oFile.Open([System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None) #-- try accessing the file
+            if ($oStream)
+            {
+            $oStream.Close() #-- close the file, if possible)
+            }
+            $false #-- file is not being locked.
+        }
+        catch
+        { #-- there was an exeption triggered while trying to acces the file, so it is being used.
+        # file is locked by a process.
+        $true
+        }
   }
 
     function Update-toHTMLStatus {
