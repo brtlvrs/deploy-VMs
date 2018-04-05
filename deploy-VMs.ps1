@@ -55,18 +55,10 @@ Begin{
     #-- Load Parameterfile
     $P = & $scriptpath\parameters.ps1
 
-    # Gather all functions
-    $Functions  = @(Get-ChildItem -Path ($scriptpath.FullName+"\"+$P.FunctionsSubFolder) -Filter *.ps1 -ErrorAction SilentlyContinue)
-
-    # Dot source the functions
-    ForEach ($File in @($Functions)) {
-        Try {
-            . $File.FullName
-        } Catch {
-            Write-Error -Message "Failed to import function $($File.FullName): $_"
-        }       
-    }
-
+    #-- load functions
+    import-module $scriptpath\functions\functions.psm1 #-- the module scans the functions subfolder and loads them as functions
+    #-- add code to execute during exit script. Removing functions module
+    $p.Add("cleanUpCodeOnExit",{remove-module -Name functions -Force -Confirm:$false})
     if ($P.Log2SysLog) {init-SysLogclient}
 
     #-- create log file and cleanup old log files
