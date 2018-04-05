@@ -78,27 +78,6 @@ Begin{
 #region for Private script functions
     #-- note: place any specific function in this region
 
-
-    function exit-script {
-    <#
-    .DESCRIPTION
-        Clean up actions before we exit the script.
-    #>
-    [CmdletBinding()]
-    Param()
-    #-- disconnect vCenter connections (if there are any)
-    if ((Get-Variable -Scope global -Name DefaultVIServers -ErrorAction SilentlyContinue ).value) {
-        Disconnect-VIServer -server * -Confirm:$false
-    }
-    #-- clock time and say bye bye
-    $ts_end=get-date
- #   write-host ("Runtime script: {0:hh}:{0:mm}:{0:ss}" -f ($ts_end- $TS_start)  )
-    $log.msg("Runtime script: {0:hh}:{0:mm}:{0:ss}" -f ($ts_end- $TS_start)  )
-    read-host "Einde script. bye bye ([Enter] to quit.)"
-    exit
-    }
-
-
     function import-tasktable {
     param(
         [string]$CSVFile="",
@@ -770,6 +749,6 @@ Process{
 
 End{
     #-- we made it, exit script.
-    $finished_normal=$true
+    $NormalExit=$true
     exit-script
 }
